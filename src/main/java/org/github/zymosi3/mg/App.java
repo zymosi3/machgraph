@@ -6,14 +6,12 @@ import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 
-import static org.github.zymosi3.mg.Drawer.color;
-
 public class App {
 
     private static final int WIDTH = 1024;
-    private static final int HEIGHT = 768;
+    private static final int HEIGHT = 850;
 
-    private static final int SCALE = 10;
+    private static final int SCALE = 1;
 
     private static final int SWIDTH = WIDTH / SCALE;
     private static final int SHEIGHT = HEIGHT / SCALE;
@@ -79,53 +77,8 @@ public class App {
     }
 
     private static void draw(Drawer drawer) {
-        debugBresenham(drawer);
-
-
-    }
-
-    public static void debugBresenham(Drawer drawer) {
-        drawer.line(14, 21, 18, 22, color(255, 255, 255));
-        drawer.line(18, 22, 14, 21, color(255, 0, 0));
-
-        drawer.line(12, 21, 8, 22, color(255, 255, 255));
-        drawer.line(8, 22, 12, 21, color(255, 0, 0));
-
-        drawer.line(12, 19, 8, 18, color(255, 255, 255));
-        drawer.line(8, 18, 12, 19, color(255, 0, 0));
-
-        drawer.line(14, 19, 18, 18, color(255, 255, 255));
-        drawer.line(18, 18, 14, 19, color(255, 0, 0));
-
-        // 1st octant
-        drawer.line(34, 21, 38, 22, color(255, 255, 255));
-        // 2nd octant
-        drawer.line(32, 21, 28, 22, color(255, 255, 255));
-        // 3rd octant
-        drawer.line(32, 19, 28, 18, color(255, 255, 255));
-        // 4th octant
-        drawer.line(34, 19, 38, 18, color(255, 255, 255));
-
-        drawer.line(34, 41, 35, 45, color(255, 255, 255));
-        drawer.line(35, 45, 34, 41, color(255, 0, 0));
-
-        drawer.line(32, 41, 31, 45, color(255, 255, 255));
-        drawer.line(31, 45, 32, 41, color(255, 0, 0));
-
-        drawer.line(32, 39, 31, 35, color(255, 255, 255));
-        drawer.line(31, 35, 32, 39, color(255, 0, 0));
-
-        drawer.line(34, 39, 35, 35, color(255, 255, 255));
-        drawer.line(35, 35, 34, 39, color(255, 0, 0));
-
-        // 1st octant
-        drawer.line(54, 41, 55, 45, color(255, 255, 255));
-        // 2nd octant
-        drawer.line(52, 41, 51, 45, color(255, 255, 255));
-        // 3rd octant
-        drawer.line(54, 39, 55, 35, color(255, 255, 255));
-        // 4th octant
-        drawer.line(52, 39, 51, 35, color(255, 255, 255));
+//        FileStreamer.ofResource("debug-bresenham").get().forEach(c -> c.accept(drawer));
+        FileStreamer.ofResource("4dim-cube").get().forEach(c -> c.accept(drawer));
     }
 
     private static class AppCanvas extends Canvas {

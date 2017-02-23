@@ -1,8 +1,5 @@
 package org.github.zymosi3.mg;
 
-/**
- *
- */
 public class Drawer {
 
     private final int[] pixels;
@@ -18,8 +15,7 @@ public class Drawer {
     }
 
     public void point(int x, int y, int color) {
-        assert x >= 0 && x < width;
-        assert y >= 0 && y < height;
+        if (x < 0 || x >= width || y < 0 || y >= height) return;
         pixels[width * y + x] = color;
     }
 
@@ -72,11 +68,12 @@ public class Drawer {
         System.arraycopy(pixels, 0, to, 0, pixels.length);
     }
 
+    @SuppressWarnings("NumericOverflow")
     public static int color(int r, int g, int b) {
         assert r >= 0 && r <= 255;
         assert g >= 0 && g <= 255;
         assert b >= 0 && b <= 255;
-        return ((255 & 0xFF) << 24) |
+        return ((0xFF) << 24) |
                 ((r & 0xFF) << 16) |
                 ((g & 0xFF) << 8)  |
                 ((b & 0xFF));
