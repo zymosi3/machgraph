@@ -24,6 +24,9 @@ public class Drawer {
      * According to David F. Rodgers "Procedural Elements for Computer Graphics"
      */
     public void line(int x0, int y0, int x1, int y1, int color) {
+        if (Global.DEBUG)
+            System.out.println("Drawer.line(" + x0 + ", " + y0 + ", " + x1 + ", " + y1 + ", " + color + ")");
+
         int x = x0;
         int y = y0;
         int dx = Math.abs(x1 - x0);
@@ -48,7 +51,9 @@ public class Drawer {
             // By Rodgers here should be
             // while (error >= 0) {
             // this modification done to make lanes, drawn from right to left and from left to right, match
-            while ((s2 >= 0 && error >= 0) || (s2 < 0 && error > 0)) {
+            // s2 >= 0 means that we in 1st or 2nd octant
+            // s2 < 0 means that we in 3rd or 4th octant
+            while ((s2 > 0 && error >= 0) || (s2 <= 0 && error > 0)) {
                 if (swap)
                     x += s1;
                 else

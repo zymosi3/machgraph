@@ -1,20 +1,27 @@
 package org.github.zymosi3.mg;
 
+import org.github.zymosi3.mg.math.Vec3;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 public class App {
 
     private static final int WIDTH = 1024;
-    private static final int HEIGHT = 850;
+    private static final int HEIGHT = 768;
 
-    private static final int SCALE = 1;
+    private static final float SCALE = 1;
 
-    private static final int SWIDTH = WIDTH / SCALE;
-    private static final int SHEIGHT = HEIGHT / SCALE;
+    private static final int SWIDTH = (int) (WIDTH * SCALE);
+    private static final int SHEIGHT = (int) (HEIGHT * SCALE);
 
     private static final int FRAMERATE = 4;
 
@@ -77,8 +84,55 @@ public class App {
     }
 
     private static void draw(Drawer drawer) {
+        final long startTime = System.currentTimeMillis();
+
 //        FileStreamer.ofResource("debug-bresenham").get().forEach(c -> c.accept(drawer));
-        FileStreamer.ofResource("4dim-cube").get().forEach(c -> c.accept(drawer));
+//        FileStreamer.ofResource("4dim-cube").get().forEach(c -> c.accept(drawer));
+
+        Function<Vec3, Vec3> projection = new PerspectiveProjection(0.83f);
+        Function<Vec3, Vec3> screenScale = new ScreenScale(WIDTH, HEIGHT);
+        Function<Vec3, Vec3> flipY = v -> new Vec3(v.x, -v.y, v.z);
+
+        Function<Vec3, Vec3> transform = screenScale.compose(projection);
+
+        BinaryOperator<Vec3> line = (v1, v2) -> {
+            drawer.line(
+                    Math.round(v1.x),
+                    Math.round(v1.y),
+                    Math.round(v2.x),
+                    Math.round(v2.y),
+                    Drawer.color(255, 255, 255)
+            );
+            return v2;
+        };
+
+        WavefrontStream.ofResource("cube").get().
+                forEach(face ->
+                    face.stream().
+                            map(transform).
+                            reduce(line)
+                );
+
+//        AtomicInteger i = new AtomicInteger();
+//        WavefrontStream.ofResource("african_head").get().
+//                peek(f -> {
+//                    if (Global.DEBUG)
+//                        System.out.println("" + i.incrementAndGet() + " " + f);
+////                    try {
+////                        Thread.sleep(10);
+////                    } catch (InterruptedException e) {
+////                        e.printStackTrace();
+////                    }
+//                }).
+//                forEach(face ->
+//                        face.stream().
+//                                map(flipY).
+//                                map(v -> new Vec3(v.x, v.y + 0.5f, v.z)).
+//                                map(screenScale).
+//                                reduce(line)
+//                );
+
+        System.out.println("Draw time " + (System.currentTimeMillis() - startTime) + " ms");
     }
 
     private static class AppCanvas extends Canvas {
