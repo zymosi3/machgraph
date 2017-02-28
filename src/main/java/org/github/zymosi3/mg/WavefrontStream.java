@@ -19,7 +19,7 @@ import java.util.stream.Stream;
  */
 public class WavefrontStream implements Supplier<Stream<Face>> {
 
-    public static WavefrontStream ofResource(String resource) {
+    public static Supplier<Stream<Face>> ofResource(String resource) {
         URL url = FileStreamer.class.getClassLoader().getResource(resource);
         assert url != null;
         return new WavefrontStream(FileSystems.getDefault().getPath(url.getPath()));

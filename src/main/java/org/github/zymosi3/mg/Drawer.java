@@ -1,5 +1,7 @@
 package org.github.zymosi3.mg;
 
+import java.util.Arrays;
+
 public class Drawer {
 
     private final int[] pixels;
@@ -16,7 +18,7 @@ public class Drawer {
 
     public void point(int x, int y, int color) {
         if (x < 0 || x >= width || y < 0 || y >= height) return;
-        pixels[width * y + x] = color;
+        pixels[width * (height - 1 - y) + x] = color;
     }
 
     /**
@@ -71,6 +73,10 @@ public class Drawer {
     public void draw(int[] to) {
         assert to.length == pixels.length;
         System.arraycopy(pixels, 0, to, 0, pixels.length);
+    }
+
+    public void clear() {
+        Arrays.setAll(pixels, i -> 0);
     }
 
     @SuppressWarnings("NumericOverflow")
