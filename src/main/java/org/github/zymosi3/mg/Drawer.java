@@ -70,7 +70,7 @@ public class Drawer {
         }
     }
 
-    public void draw(int[] to) {
+    public void flush(int[] to) {
         assert to.length == pixels.length;
         System.arraycopy(pixels, 0, to, 0, pixels.length);
     }

@@ -17,16 +17,20 @@ public class Obj {
 
     public final Function<Vec3, Vec3> obj2Screen;
 
-    public Obj(Position position, Stream<Face> faceStream) {
+    public final Function<Obj, Obj> move;
+
+    public Obj(Position position, Stream<Face> faceStream, Motion move) {
         this.position = position;
         this.motion = new Motion(new Vec3(0.0f, 0.0f, 0.0f), new Vec3(0.0f, 0.0f, 0.0f));
         this.faces = faceStream.collect(Collectors.toList());
+
+        this.move = move;
 
         obj2Screen = v -> motion.movePosition.apply(position).obj2screen.apply(v);
     }
 
     public Stream<Face> stream() {
-        return faces.stream();
+        return Stream.of(faces.stream(), Stream.of(faces.get(0))).flatMap(f -> f);
     }
 
     public Obj motion(Motion motion) {

@@ -15,8 +15,6 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 
@@ -25,22 +23,20 @@ public class App {
     private static final int WIDTH = 1024;
     private static final int HEIGHT = 768;
 
-    private static final float SCALE = 1;
+    private static final float SCALE = 1f;
 
     private static final int SWIDTH = (int) (WIDTH * SCALE);
     private static final int SHEIGHT = (int) (HEIGHT * SCALE);
 
     private static final int FRAMERATE = 60;
 
-    private static List<Obj> objects;
-
     public static void main(String[] args) {
-        loadObjects();
+        List<Obj> objects = loadObjects();
 
         JFrame appWindow = new JFrame("Computer Graphics rocks");
         JPanel panel = new JPanel(new BorderLayout());
         Drawer drawer = new Drawer(SWIDTH, SHEIGHT);
-        AppCanvas canvas = new AppCanvas(drawer);
+        AppCanvas canvas = new AppCanvas(drawer, objects);
         panel.add(canvas, BorderLayout.CENTER);
 
         appWindow.setContentPane(panel);
@@ -94,48 +90,40 @@ public class App {
 //        new Thread(() -> draw(drawer), "draw").start();
     }
 
-    private static void loadObjects() {
-        final Vec3 X0 = new Vec3(0.0f, 0.0f, 2.0f);
-        final float mu = 1.0f;
-        final Mat3 A = new Mat3(mu, mu, -mu);
-        final Mat3 A1 = new Mat3(1.0f / mu,  1.0f / mu, 1.0f / -mu);
-        objects = Collections.singletonList(new Obj(new Position(A, A1, X0), WavefrontStream.ofResource("cube").get()));
+    private static List<Obj> loadObjects() {
+        Vec3 X0 = new Vec3(0.0f, 0.0f, 2.0f);
+        float mu = 1.0f;
+        Mat3 A = new Mat3(mu, mu, -mu);
+        Mat3 A1 = new Mat3(1.0f / mu,  1.0f / mu, 1.0f / -mu);
+        Obj cube = new Obj(
+                new Position(A, A1, X0),
+                WavefrontStream.ofResource("cube").get(),
+                new Motion(new Vec3(0.5f, 0.5f, 0.5f), new Vec3(0.0f, 0.0f, 0.0f))
+        );
+        return Collections.singletonList(cube);
     }
 
-    private static void draw(Drawer drawer) {
-        final long startTime = System.currentTimeMillis();
+    private static void draw(Drawer drawer, List<Obj> objects) {
+        long startTime = System.currentTimeMillis();
 
 //        FileStreamer.ofResource("debug-bresenham").get().forEach(c -> c.accept(drawer));
 //        FileStreamer.ofResource("4dim-cube").get().forEach(c -> c.accept(drawer));
 
 
-        final Function<Vec3, Vec3> projection = new PerspectiveProjection(0.83f);
-        final Function<Vec3, Vec3> screenScale = new ScreenScale(WIDTH, HEIGHT);
+        Function<Vec3, Vec3> projection = new PerspectiveProjection(0.83f);
+        Function<Vec3, Vec3> screenScale = new ScreenScale(WIDTH, HEIGHT);
 
-        final BinaryOperator<Vec3> line = (v1, v2) -> {
-            drawer.line(
-                    Math.round(v1.x),
-                    Math.round(v1.y),
-                    Math.round(v2.x),
-                    Math.round(v2.y),
-                    Drawer.color(255, 255, 255)
-            );
-            return v2;
-        };
-
-        final Motion motion = new Motion(new Vec3(0.5f, 0.5f, 0.5f), new Vec3(0.0f, 0.0f, 0.0f));
+        BinaryOperator<Vec3> drawLine = new DrawLine(drawer);
 
         objects.stream().
-                map(motion).
-                forEach(obj -> {
-                    obj.stream().forEach(face ->
-                            face.stream().
-                                    map(obj.obj2Screen).
-                                    map(projection).
-                                    map(screenScale).
-                                    reduce(line)
-                    );
-                });
+                map(obj -> obj.move.apply(obj)).
+                forEach(obj -> obj.stream().forEach(face ->
+                        face.stream().
+                                map(obj.obj2Screen).
+                                map(projection).
+                                map(screenScale).
+                                reduce(drawLine)
+                ));
 
 //        AtomicInteger i = new AtomicInteger();
 //        WavefrontStream.ofResource("african_head").get().
@@ -155,7 +143,8 @@ public class App {
 //                                reduce(line)
 //                );
 
-//        System.out.println("Draw time " + (System.currentTimeMillis() - startTime) + " ms");
+        if (Global.DEBUG)
+            System.out.println("Draw time " + (System.currentTimeMillis() - startTime) + " ms");
     }
 
     private static class AppCanvas extends Canvas {
@@ -163,8 +152,10 @@ public class App {
         private final BufferedImage image;
         private final int[] pixels;
         private final Drawer drawer;
+        private final List<Obj> objects;
 
-        AppCanvas(Drawer drawer) {
+        AppCanvas(Drawer drawer, List<Obj> objects) {
+            this.objects = objects;
             Dimension size = new Dimension(App.WIDTH, App.HEIGHT);
             setSize(size);
             setPreferredSize(size);
@@ -184,8 +175,8 @@ public class App {
                 return;
             }
 
-            draw(drawer);
-            drawer.draw(pixels);
+            draw(drawer, objects);
+            drawer.flush(pixels);
             drawer.clear();
 
             Graphics g = bs.getDrawGraphics();
