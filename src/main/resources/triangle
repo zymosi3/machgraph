@@ -1,0 +1,9 @@
+# vertices
+v -1.0 -1.0 -1.0
+v -1.0 1.0 -1.0
+v 1.0 1.0 -1.0
+# textures
+# normals
+# parameters
+# faces
+f 1 2 3
