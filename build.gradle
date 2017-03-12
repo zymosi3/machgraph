@@ -5,5 +5,30 @@ repositories {
 }
 
 dependencies {
+    compile "org.openjdk.jmh:jmh-core:1.17.5"
+    compile "org.openjdk.jmh:jmh-generator-annprocess:1.17.5"
+}
 
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'org.openjdk.jmh.Main'
+    }
+}
+
+task fatjar(type: Jar, dependsOn: build) {
+    doFirst {
+        from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    }
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
+    manifest {
+        attributes "Main-Class": "org.openjdk.jmh.Main"
+    }
+    archiveName = "benchmarks.jar"
+    destinationDir = file("${buildDir}/libs")
+    from(sourceSets.main.output) {}
+    // creating fat jar
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
 }

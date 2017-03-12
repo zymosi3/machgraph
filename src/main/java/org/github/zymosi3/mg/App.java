@@ -25,7 +25,7 @@ public class App {
     private static final int WIDTH = 1024;
     private static final int HEIGHT = 768;
 
-    private static final float SCALE = .1f;
+    private static final float SCALE = 1f;
 
     private static final int SWIDTH = (int) (WIDTH * SCALE);
     private static final int SHEIGHT = (int) (HEIGHT * SCALE);
@@ -116,26 +116,26 @@ public class App {
 //        FileStreamer.ofResource("debug-bresenham").get().forEach(c -> c.accept(drawer));
 //        FileStreamer.ofResource("4dim-cube").get().forEach(c -> c.accept(drawer));
 
-        int color = Drawer.color(255, 255, 255);
-        drawer.triangleBresenham(10, 10, 15, 20, 20, 10, color);
-        drawer.line(35, 20, 30, 10, color);
-        drawer.line(35, 20, 40, 10, color);
-        drawer.line(30, 10, 40, 10, color);
-
-        drawer.triangleBresenham(50, 20, 60, 20, 55, 10, color);
-        drawer.line(75, 10, 70, 20, color);
-        drawer.line(75, 10, 80, 20, color);
-        drawer.line(70, 20, 80, 20, color);
-
-        drawer.triangleBresenham(10, 25, 20, 45, 25, 30, color);
-        drawer.line(40, 25, 50, 45, color);
-        drawer.line(50, 45, 55, 30, color);
-        drawer.line(55, 30, 40, 25, color);
-
-        drawer.triangleBresenham(10, 50, 20, 70, 18, 55, color);
-        drawer.line(40, 50, 50, 70, color);
-        drawer.line(50, 70, 48, 55, color);
-        drawer.line(48, 55, 40, 50, color);
+//        int color = Drawer.color(255, 255, 255);
+//        drawer.triangleBresenham(10, 10, 15, 20, 20, 10, color);
+//        drawer.line(35, 20, 30, 10, color);
+//        drawer.line(35, 20, 40, 10, color);
+//        drawer.line(30, 10, 40, 10, color);
+//
+//        drawer.triangleBresenham(50, 20, 60, 20, 55, 10, color);
+//        drawer.line(75, 10, 70, 20, color);
+//        drawer.line(75, 10, 80, 20, color);
+//        drawer.line(70, 20, 80, 20, color);
+//
+//        drawer.triangleBresenham(10, 25, 20, 45, 25, 30, color);
+//        drawer.line(40, 25, 50, 45, color);
+//        drawer.line(50, 45, 55, 30, color);
+//        drawer.line(55, 30, 40, 25, color);
+//
+//        drawer.triangleBresenham(10, 50, 20, 70, 18, 55, color);
+//        drawer.line(40, 50, 50, 70, color);
+//        drawer.line(50, 70, 48, 55, color);
+//        drawer.line(48, 55, 40, 50, color);
 
 
         Function<Vec3, Vec3> projection = new PerspectiveProjection(0.83f);
@@ -143,23 +143,23 @@ public class App {
 //
         BinaryOperator<Vec3> drawLine = new DrawLine(drawer);
 
-//        objects.stream().
-//                map(obj -> obj.move.apply(obj)).
-//                forEach(obj -> obj.stream().forEach(face ->
-//                        {
-//                            Vec3[] vertices = face.stream().
-//                                    map(obj.obj2Screen).
-//                                    map(projection).
-//                                    map(screenScale).
-//                                    toArray(Vec3[]::new);
-//                            drawer.triangleBresenham(
-//                                    Math.round(vertices[0].x), Math.round(vertices[0].y),
-//                                    Math.round(vertices[1].x), Math.round(vertices[1].y),
-//                                    Math.round(vertices[2].x), Math.round(vertices[2].y),
-//                                    Drawer.color(255, 255, 255)
-//                            );
-//                        }
-//                ));
+        objects.stream().
+                map(obj -> obj.move.apply(obj)).
+                forEach(obj -> obj.stream().forEach(face ->
+                        {
+                            Vec3[] vertices = face.stream().
+                                    map(obj.obj2Screen).
+                                    map(projection).
+                                    map(screenScale).
+                                    toArray(Vec3[]::new);
+                            drawer.triangleBresenham(
+                                    Math.round(vertices[0].x), Math.round(vertices[0].y),
+                                    Math.round(vertices[1].x), Math.round(vertices[1].y),
+                                    Math.round(vertices[2].x), Math.round(vertices[2].y),
+                                    Drawer.color(255, 255, 255)
+                            );
+                        }
+                ));
 
 //        objects.stream().
 //                map(obj -> obj.move.apply(obj)).

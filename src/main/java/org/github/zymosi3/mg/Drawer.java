@@ -73,17 +73,54 @@ public class Drawer {
     }
 
     public void triangleBresenham(int x0, int y0, int x1, int y1, int x2, int y2, int color) {
-        int[][] vertices = new int[][] { new int[] { x0, y0 }, new int[] { x1, y1 }, new int[] { x2, y2 } };
-        Arrays.sort(vertices, Comparator.comparingInt(v -> v[1]));
-        triangleBresenhamSorted(
-                vertices[0][0],
-                vertices[0][1],
-                vertices[1][0],
-                vertices[1][1],
-                vertices[2][0],
-                vertices[2][1],
-                color
-        );
+        int x_0, y_0, x_1, y_1, x_2, y_2;
+        if (y0 <= y1) {
+            if (y0 <= y2) {
+                x_0 = x0;
+                y_0 = y0;
+                if (y1 <= y2) { //012
+                    x_1 = x1;
+                    y_1 = y1;
+                    x_2 = x2;
+                    y_2 = y2;
+                } else { //021
+                    x_1 = x2;
+                    y_1 = y2;
+                    x_2 = x1;
+                    y_2 = y1;
+                }
+            } else { //201
+                x_0 = x2;
+                y_0 = y2;
+                x_1 = x0;
+                y_1 = y0;
+                x_2 = x1;
+                y_2 = y1;
+            }
+        } else if (y1 <= y2) {
+            x_0 = x1;
+            y_0 = y1;
+            if (y0 <= y2) { //102
+                x_1 = x0;
+                y_1 = y0;
+                x_2 = x2;
+                y_2 = y2;
+            } else { // 120
+                x_1 = x2;
+                y_1 = y2;
+                x_2 = x0;
+                y_2 = y0;
+            }
+        } else { // 210
+            x_0 = x2;
+            y_0 = y2;
+            x_1 = x1;
+            y_1 = y1;
+            x_2 = x0;
+            y_2 = y0;
+        }
+
+        triangleBresenhamSorted(x_0, y_0, x_1, y_1, x_2, y_2, color);
     }
 
     private void triangleBresenhamSorted(int x0, int y0, int x1, int y1, int x2, int y2, int color) {
@@ -138,7 +175,11 @@ public class Drawer {
         boolean stop_1 = false;
         for (int i_0 = 0, i_1 = 0; i_0 <= dx_0 || i_1 <= dx_1; ) {
             if (stop_0 && stop_1) {
-                line(x_0, y_0, x_1, y_1, color);
+                int xMin = Math.min(x_0, x_1);
+                int xMax = Math.max(x_0, x_1);
+                for (int x = xMin; x <= xMax; x++){
+                    point(x, y_0, color);
+                }
                 stop_0 = false;
                 stop_1 = false;
             }
