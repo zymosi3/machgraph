@@ -8,12 +8,8 @@ import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 @State(Scope.Benchmark)
@@ -27,12 +23,14 @@ public class DrawerTest {
     private static int WHITE = Drawer.color(255, 255, 255);
 
     private static Drawer drawer;
+    private static DrawerZBuffered drawerZBuffered;
     private static Random random;
 
     @Setup
     public static void init() {
         random = new Random();
         drawer = new Drawer(WIDTH, HEIGHT);
+        drawerZBuffered = new DrawerZBuffered(WIDTH, HEIGHT);
     }
 
     @Benchmark
@@ -68,6 +66,35 @@ public class DrawerTest {
                 random.nextInt(HEIGHT),
                 random.nextInt(WIDTH),
                 random.nextInt(HEIGHT),
+                WHITE
+        );
+    }
+
+    @Benchmark
+    public static void bresenhamTriangleZBuffered()  {
+        drawerZBuffered.triangleBresenham(
+                random.nextInt(WIDTH),
+                random.nextInt(HEIGHT),
+                random.nextFloat(),
+                random.nextInt(WIDTH),
+                random.nextInt(HEIGHT),
+                random.nextFloat(),
+                random.nextInt(WIDTH),
+                random.nextInt(HEIGHT),
+                random.nextFloat(),
+                WHITE
+        );
+    }
+
+    @Benchmark
+    public static void bresenhamLineZBuffered()  {
+        drawerZBuffered.line(
+                random.nextInt(WIDTH),
+                random.nextInt(HEIGHT),
+                random.nextFloat(),
+                random.nextInt(WIDTH),
+                random.nextInt(HEIGHT),
+                random.nextFloat(),
                 WHITE
         );
     }

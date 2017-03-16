@@ -6,9 +6,9 @@ import java.util.function.BinaryOperator;
 
 public class DrawLine implements BinaryOperator<Vec3> {
 
-    private final Drawer drawer;
+    private final DrawerZBuffered drawer;
 
-    public DrawLine(Drawer drawer) {
+    public DrawLine(DrawerZBuffered drawer) {
 
         this.drawer = drawer;
     }
@@ -18,8 +18,10 @@ public class DrawLine implements BinaryOperator<Vec3> {
         drawer.line(
                 Math.round(v1.x),
                 Math.round(v1.y),
+                v1.z,
                 Math.round(v2.x),
                 Math.round(v2.y),
+                v2.z,
                 Drawer.color(255, 255, 255)
         );
         return v2;

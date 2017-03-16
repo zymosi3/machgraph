@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-public class FileStreamer implements Supplier<Stream<Consumer<Drawer>>> {
+public class FileStreamer implements Supplier<Stream<Consumer<DrawerZBuffered>>> {
 
     public static FileStreamer ofResource(String resource) {
         URL url = FileStreamer.class.getClassLoader().getResource(resource);
@@ -25,7 +25,7 @@ public class FileStreamer implements Supplier<Stream<Consumer<Drawer>>> {
     }
 
     @Override
-    public Stream<Consumer<Drawer>> get() {
+    public Stream<Consumer<DrawerZBuffered>> get() {
         try {
             return Files.lines(path).
                     map(String::trim).
@@ -38,7 +38,7 @@ public class FileStreamer implements Supplier<Stream<Consumer<Drawer>>> {
         }
     }
 
-    private Consumer<Drawer> chooseType(String type, String[] params) {
+    private Consumer<DrawerZBuffered> chooseType(String type, String[] params) {
         switch (type) {
             case "l":
                 int[] intParams = Stream.of(params).
@@ -49,8 +49,10 @@ public class FileStreamer implements Supplier<Stream<Consumer<Drawer>>> {
                 return drawer -> drawer.line(
                         intParams[0],
                         intParams[1],
+                        0.0f,
                         intParams[2],
                         intParams[3],
+                        0.0f,
                         Drawer.color(intParams[4], intParams[5], intParams[6])
                 );
             default:

@@ -3,30 +3,35 @@ package org.github.zymosi3.mg;
 import java.util.Arrays;
 
 @SuppressWarnings("Duplicates")
-public class Drawer {
+public class DrawerZBuffered {
 
     private final int[] pixels;
+    private final Zbuf zbuf;
     public final int width;
     public final int height;
 
-    public Drawer(int width, int height) {
+    public DrawerZBuffered(int width, int height) {
         assert width > 0;
         assert height > 0;
         this.width = width;
         this.height = height;
         pixels = new int[width * height];
+        zbuf = new Zbuf(width, height);
     }
 
-    public void point(int x, int y, int color) {
-        if (x < 0 || x >= width || y < 0 || y >= height) return;
-        pixels[width * (height - 1 - y) + x] = color;
+    public void point(int x, int y, float z, int color) {
+        if (x < 0 || x >= width || y < 0 || y >= height || z < 0) return;
+        if (z < zbuf.get(x, y)) {
+            pixels[width * (height - 1 - y) + x] = color;
+            zbuf.set(x, y, z);
+        }
     }
 
     /**
      * Integer Bresenham’s algorithm
      * According to David F. Rodgers "Procedural Elements for Computer Graphics"
      */
-    public void line(int x0, int y0, int x1, int y1, int color) {
+    public void line(int x0, int y0, float z0, int x1, int y1, float z1, int color) {
         if (Global.DEBUG)
             System.out.println("Drawer.line(" + x0 + ", " + y0 + ", " + x1 + ", " + y1 + ", " + color + ")");
 
@@ -34,6 +39,7 @@ public class Drawer {
         int y = y0;
         int dx = Math.abs(x1 - x0);
         int dy = Math.abs(y1 - y0);
+        float dz = z1 - z0;
         int s1 = Integer.signum(x1 - x0);
         int s2 = Integer.signum(y1 - y0);
 
@@ -50,7 +56,9 @@ public class Drawer {
 
         // iterate from 0 to dx to include the both line ends
         for (int i = 0; i <= dx; i++) {
-            point(x, y, color);
+            int sx = swap ? s2 : s1;
+            float z = z0 + (swap ? (y - y0) : (x - x0)) * dz / dx * sx;
+            point(x, y, z, color);
             // By Rodgers here should be
 //             while (error >= 0) {
             // this modification done to make lanes, drawn from right to left and from left to right, match
@@ -71,80 +79,125 @@ public class Drawer {
         }
     }
 
-    public void triangleBresenham(int x0, int y0, int x1, int y1, int x2, int y2, int color) {
+    public void triangleBresenham(
+            int x0, int y0, float z0,
+            int x1, int y1, float z1,
+            int x2, int y2, float z2,
+            int color
+    ) {
         int x_0, y_0, x_1, y_1, x_2, y_2;
+        float z_0, z_1, z_2;
         if (y0 <= y1) {
             if (y0 <= y2) {
                 x_0 = x0;
                 y_0 = y0;
+                z_0 = z0;
                 if (y1 <= y2) { //012
                     x_1 = x1;
                     y_1 = y1;
+                    z_1 = z1;
                     x_2 = x2;
                     y_2 = y2;
+                    z_2 = z2;
                 } else { //021
                     x_1 = x2;
                     y_1 = y2;
+                    z_1 = z2;
                     x_2 = x1;
                     y_2 = y1;
+                    z_2 = z1;
                 }
             } else { //201
                 x_0 = x2;
                 y_0 = y2;
+                z_0 = z2;
                 x_1 = x0;
                 y_1 = y0;
+                z_1 = z0;
                 x_2 = x1;
                 y_2 = y1;
+                z_2 = z1;
             }
         } else if (y1 <= y2) {
             x_0 = x1;
             y_0 = y1;
+            z_0 = z1;
             if (y0 <= y2) { //102
                 x_1 = x0;
                 y_1 = y0;
+                z_1 = z0;
                 x_2 = x2;
                 y_2 = y2;
+                z_2 = z2;
             } else { // 120
                 x_1 = x2;
                 y_1 = y2;
+                z_1 = z2;
                 x_2 = x0;
                 y_2 = y0;
+                z_2 = z0;
             }
         } else { // 210
             x_0 = x2;
             y_0 = y2;
+            z_0 = z2;
             x_1 = x1;
             y_1 = y1;
+            z_1 = z1;
             x_2 = x0;
             y_2 = y0;
+            z_2 = z0;
         }
 
-        triangleBresenhamSorted(x_0, y_0, x_1, y_1, x_2, y_2, color);
+        triangleBresenhamSorted(x_0, y_0, z_0, x_1, y_1, z_1, x_2, y_2, z_2, color);
     }
 
-    private void triangleBresenhamSorted(int x0, int y0, int x1, int y1, int x2, int y2, int color) {
+    private void triangleBresenhamSorted(
+            int x0, int y0, float z0,
+            int x1, int y1, float z1,
+            int x2, int y2, float z2,
+            int color
+    ) {
         // here we know that y0 <= y2 <= y3
         if (y1 == y2) { // check for trivial case of bottom-flat triangle
-            fillOneSideFlatTriangle(x1, y1, x2, y2, x0, y0, color);
+            fillOneSideFlatTriangle(x1, y1, z1, x2, y2, z2, x0, y0, z0, color);
         } else if (y0 == y1) { // check for trivial case of top-flat triangle
-            fillOneSideFlatTriangle(x0, y0, x1, y1, x2, y2, color);
+            fillOneSideFlatTriangle(x0, y0, z0, x1, y1, z1, x2, y2, z2, color);
         } else {
             // general case - split the triangle in a topflat and bottom-flat one
             int x3 = Math.round(x0 + ((float)(y1 - y0) / (float)(y2 - y0)) * (x2 - x0));
-            fillOneSideFlatTriangle(x1, y1, x3, y1, x0, y0, color);
-            fillOneSideFlatTriangle(x1, y1, x3, y1, x2, y2, color);
+            int dx = Math.abs(x0 - x2);
+            int dy = Math.abs(y0 - y2);
+            float z3;
+            if (dy > dx) {
+                z3 = z0 + (y1 - y0) * (z2 - z0) / (y2 - y0);
+            } else {
+                z3 = z0 + (x3 - x0) * (z2 - z0) / (x2 - x0);
+            }
+            fillOneSideFlatTriangle(x1, y1, z1, x3, y1, z3, x0, y0, z0, color);
+            fillOneSideFlatTriangle(x1, y1, z1, x3, y1, z3, x2, y2, z2, color);
         }
     }
 
-    private void fillOneSideFlatTriangle(int x0, int y0, int x1, int y1, int x2, int y2, int color) {
+    @SuppressWarnings("ConstantConditions")
+    private void fillOneSideFlatTriangle(
+            int x0, int y0, float z0,
+            int x1, int y1, float z1,
+            int x2, int y2, float z2,
+            int color
+    ) {
         int x_0 = x2; // x for the one side line
         int x_1 = x2; // x for the other side line
         int y_0 = y2;
         int y_1 = y2;
+        float z_0 = z2;
+        float z_1 = z2;
         int dx_0 = Math.abs(x0 - x2);
         int dx_1 = Math.abs(x1 - x2);
         int dy_0 = Math.abs(y0 - y2);
         int dy_1 = Math.abs(y1 - y2);
+        float dz_0 = z0 - z2;
+        float dz_1 = z1 - z2;
         int sx_0 = Integer.signum(x0 - x2);
         int sx_1 = Integer.signum(x1 - x2);
         int sy_0 = Integer.signum(y0 - y2);
@@ -174,16 +227,19 @@ public class Drawer {
         boolean stop_1 = false;
         for (int i_0 = 0, i_1 = 0; i_0 <= dx_0 || i_1 <= dx_1; ) {
             if (stop_0 && stop_1) {
-                int xMin = Math.min(x_0, x_1);
-                int xMax = Math.max(x_0, x_1);
-                for (int x = xMin; x <= xMax; x++){
-                    point(x, y_0, color);
+                int s = Integer.signum(x_1 - x_0);
+                int dx = Math.abs(x_0 - x_1);
+                float dz = z_1 - z_0;
+                for (int i = 0; i <= dx; i++){
+                    int x = x_0 + (i * s);
+                    float z = z_0 + Math.abs(x - x_0) * dz / dx;
+                    point(x, y_0, z, color);
                 }
                 stop_0 = false;
                 stop_1 = false;
             }
             if (i_0 <= dx_0 && !stop_0) {
-                point(x_0, y_0, color);
+                point(x_0, y_0, z_0, color);
                 while ((sy_0 > 0 && error_0 >= 0) || (sy_0 <= 0 && error_0 > 0)) {
                     if (swap_0)
                         x_0 += sx_0;
@@ -200,11 +256,13 @@ public class Drawer {
                 } else
                     x_0 += sx_0;
                 error_0 += 2 * dy_0;
+//                int dx = dx_0 * (swap_0 ? sy_0 : sx_0);
+                z_0 = z2 + Math.abs(swap_0 ? (y2 - y_0) : (x2 - x_0)) * dz_0 / dx_0;
                 i_0++;
             }
 
             if (i_1 <= dx_1 && !stop_1) {
-                point(x_1, y_1, color);
+                point(x_1, y_1, z_1, color);
                 while ((sy_1 > 0 && error_1 >= 0) || (sy_1 <= 0 && error_1 > 0)) {
                     if (swap_1)
                         x_1 += sx_1;
@@ -220,76 +278,74 @@ public class Drawer {
                 } else
                     x_1 += sx_1;
                 error_1 += 2 * dy_1;
+//                int dx = dx_1 * (swap_1 ? sy_1 : sx_1);
+                z_1 = z2 + Math.abs(swap_1 ? (y2 - y_1) : (x2 - x_1)) * dz_1 / dx_1;
                 i_1++;
             }
         }
     }
 
-    public void triangle(int x0, int y0, int x1, int y1, int x2, int y2, int color) {
-        int xMin = Math.min(x0, Math.min(x1, x2));
-        int yMin = Math.min(y0, Math.min(y1, y2));
-        int xMax = Math.max(x0, Math.max(x1, x2));
-        int yMax = Math.max(y0, Math.max(y1, y2));
+//    public void triangle(int x0, int y0, int x1, int y1, int x2, int y2, int color) {
+//        int xMin = Math.min(x0, Math.min(x1, x2));
+//        int yMin = Math.min(y0, Math.min(y1, y2));
+//        int xMax = Math.max(x0, Math.max(x1, x2));
+//        int yMax = Math.max(y0, Math.max(y1, y2));
+//
+//        for (int y = yMin; y <= yMax; y++) {
+//            float xCross0 = xMax;
+//            float xCross1 = xMin;
+//            float xCross = xCross(xMin, y, xMax, y, x0, y0, x1, y1);
+//            if (!Float.isNaN(xCross)) {
+//                if (xCross < xCross0) xCross0 = xCross;
+//                if (xCross > xCross1) xCross1 = xCross;
+//            }
+//            xCross = xCross(xMin, y, xMax, y, x1, y1, x2, y2);
+//            if (!Float.isNaN(xCross)) {
+//                if (xCross < xCross0) xCross0 = xCross;
+//                if (xCross > xCross1) xCross1 = xCross;
+//            }
+//            xCross = xCross(xMin, y, xMax, y, x2, y2, x0, y0);
+//            if (!Float.isNaN(xCross)) {
+//                if (xCross < xCross0) xCross0 = xCross;
+//                if (xCross > xCross1) xCross1 = xCross;
+//            }
+//            int xCross0int = Math.round(xCross0);
+//            int xCross1int = -Math.round(-xCross1);
+//            for (int x = xCross0int; x <= xCross1int; x++) {
+//                point(x, y, color);
+//            }
+//        }
+//    }
 
-        for (int y = yMin; y <= yMax; y++) {
-            float xCross0 = xMax;
-            float xCross1 = xMin;
-            float xCross = xCross(xMin, y, xMax, y, x0, y0, x1, y1);
-            int nanCount = 0;
-            if (Float.isNaN(xCross)) nanCount++;
-            if (!Float.isNaN(xCross)) {
-                if (xCross < xCross0) xCross0 = xCross;
-                if (xCross > xCross1) xCross1 = xCross;
-            }
-            xCross = xCross(xMin, y, xMax, y, x1, y1, x2, y2);
-            if (Float.isNaN(xCross)) nanCount++;
-            if (!Float.isNaN(xCross)) {
-                if (xCross < xCross0) xCross0 = xCross;
-                if (xCross > xCross1) xCross1 = xCross;
-            }
-            xCross = xCross(xMin, y, xMax, y, x2, y2, x0, y0);
-            if (Float.isNaN(xCross)) nanCount++;
-            if (!Float.isNaN(xCross)) {
-                if (xCross < xCross0) xCross0 = xCross;
-                if (xCross > xCross1) xCross1 = xCross;
-            }
-            int xCross0int = Math.round(xCross0);
-            int xCross1int = -Math.round(-xCross1);
-            for (int x = xCross0int; x <= xCross1int; x++) {
-                point(x, y, color);
-            }
-        }
-    }
-
-    private float xCross(float x00, float y00, float x01, float y01,
-                         float x10, float y10, float x11, float y11
-    ) {
-        float xMin = Math.min(x10, x11);
-        float yMin = Math.min(y10, y11);
-        float xMax = Math.max(x10, x11);
-        float yMax = Math.max(y10, y11);
-        float a0 = y01 - y00;
-        float b0 = x00 - x01;
-        float c0 = x00 * (y00 - y01) + y00 * (x01 - x00);
-        float a1 = y11 - y10;
-        float b1 = x10 - x11;
-        float c1 = x10 * (y10 - y11) + y10 * (x11 - x10);
-
-        float D = a0 * b1 - a1 * b0;
-        float Dx = -c0 * b1 + c1 * b0;
-        float Dy = -a0 * c1 + a1 * c0;
-
-        if (D != 0) {
-            float x = Dx / D;
-            float y = Dy / D;
-            float e = -0.001f;
-            if (x - xMin > e && xMax - x > e && y - yMin > e && yMax - y > e) {
-                return x;
-            }
-        }
-
-        return Float.NaN;
-    }
+//    private float xCross(float x00, float y00, float x01, float y01,
+//                         float x10, float y10, float x11, float y11
+//    ) {
+//        float xMin = Math.min(x10, x11);
+//        float yMin = Math.min(y10, y11);
+//        float xMax = Math.max(x10, x11);
+//        float yMax = Math.max(y10, y11);
+//        float a0 = y01 - y00;
+//        float b0 = x00 - x01;
+//        float c0 = x00 * (y00 - y01) + y00 * (x01 - x00);
+//        float a1 = y11 - y10;
+//        float b1 = x10 - x11;
+//        float c1 = x10 * (y10 - y11) + y10 * (x11 - x10);
+//
+//        float D = a0 * b1 - a1 * b0;
+//        float Dx = -c0 * b1 + c1 * b0;
+//        float Dy = -a0 * c1 + a1 * c0;
+//
+//        if (D != 0) {
+//            float x = Dx / D;
+//            float y = Dy / D;
+//            float e = -0.001f;
+//            if (x - xMin > e && xMax - x > e && y - yMin > e && yMax - y > e) {
+//                return x;
+//            }
+//        }
+//
+//        return Float.NaN;
+//    }
 
     public void flush(int[] to) {
         assert to.length == pixels.length;
@@ -298,6 +354,7 @@ public class Drawer {
 
     public void clear() {
         Arrays.setAll(pixels, i -> 0);
+        zbuf.clear();
     }
 
     @SuppressWarnings("NumericOverflow")

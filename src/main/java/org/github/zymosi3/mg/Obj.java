@@ -30,7 +30,7 @@ public class Obj {
     }
 
     public Stream<Face> stream() {
-        return Stream.of(faces.stream(), Stream.of(faces.get(0))).flatMap(f -> f);
+        return faces.stream();
     }
 
     public Obj motion(Motion motion) {

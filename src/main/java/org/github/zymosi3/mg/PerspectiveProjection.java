@@ -16,7 +16,7 @@ public class PerspectiveProjection implements Function<Vec3, Vec3> {
     @Override
     public Vec3 apply(Vec3 v) {
         float zeta = 1.0f + v.z / focus;
-        Vec3 res = new Vec3(v.x / zeta, v.y / zeta, 0.0f);
+        Vec3 res = new Vec3(v.x / zeta, v.y / zeta, v.z);
 
         if (Global.DEBUG)
             System.out.println("PerspectiveProjection " + v + " -> " + res);

@@ -18,7 +18,7 @@ public class ScreenScale implements Function<Vec3, Vec3> {
 
     @Override
     public Vec3 apply(Vec3 v) {
-        Vec3 res = new Vec3(v.x * scaleTo + width * 0.5f, v.y * scaleTo + height * 0.5f, 0.0f);
+        Vec3 res = new Vec3(v.x * scaleTo + width * 0.5f, v.y * scaleTo + height * 0.5f, v.z);
 
         if (Global.DEBUG)
             System.out.println("ScreenScale " + v + " -> " + res);
