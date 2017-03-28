@@ -1,16 +1,18 @@
 package org.github.zymosi3.mg;
 
+import org.github.zymosi3.mg.math.Vec3;
+
 import java.util.Arrays;
 
 @SuppressWarnings("Duplicates")
-public class DrawerZBuffered {
+public class DrawerAlt {
 
     private final int[] pixels;
     private final Zbuf zbuf;
     public final int width;
     public final int height;
 
-    public DrawerZBuffered(int width, int height) {
+    public DrawerAlt(int width, int height) {
         assert width > 0;
         assert height > 0;
         this.width = width;
@@ -24,6 +26,169 @@ public class DrawerZBuffered {
         if (z < zbuf.get(x, y)) {
             pixels[width * (height - 1 - y) + x] = color;
             zbuf.set(x, y, z);
+        }
+    }
+
+    private float clamp(float value) {
+        return Math.max(0.0f, Math.min(value, 1.0f));
+    }
+
+    private float interpolate(float min, float max, float gradient) {
+        return min + (max - min) * clamp(gradient);
+    }
+
+    private void processScanLine(
+            int y,
+            int pax, int pay, float paz,
+            int pbx, int pby, float pbz,
+            int pcx, int pcy, float pcz,
+            int pdx, int pdy, float pdz,
+            int color
+    ) {
+        float gradient1 = pay != pby ? ((float) (y - pay)) / (pby - pay) : 1;
+        float gradient2 = pcy != pdy ? ((float) (y - pcy)) / (pdy - pcy) : 1;
+        int sx = (int) interpolate(pax, pbx, gradient1);
+        int ex = (int) interpolate(pcx, pdx, gradient2);
+        float z1 = interpolate(paz, pbz, gradient1);
+        float z2 = interpolate(pcz, pdz, gradient2);
+        for (int x = sx; x < ex; x++) {
+            float gradient = ((float) (x - sx)) / (ex - sx);
+            float z = interpolate(z1, z2, gradient);
+            point(x, y, z, color);
+        }
+    }
+
+    public void drawTriangle(
+            int p1x, int p1y, float p1z,
+            int p2x, int p2y, float p2z,
+            int p3x, int p3y, float p3z,
+            int color
+    ) {
+        // Sorting the points in order to always have this order on screen p1, p2 & p3
+        // with p1 always up (thus having the Y the lowest possible to be near the top screen)
+        // then p2 between p1 & p3
+        if (p1y > p2y) {
+            int x = p2x;
+            int y = p2y;
+            float z = p2z;
+            p2x = p1x;
+            p2y = p1y;
+            p2z = p1z;
+            p1x = x;
+            p1y = y;
+            p1z = z;
+        }
+
+        if (p2y > p3y) {
+            int x = p2x;
+            int y = p2y;
+            float z = p2z;
+            p2x = p3x;
+            p2y = p3y;
+            p2z = p3z;
+            p3x = x;
+            p3y = y;
+            p3z = z;
+        }
+
+        if (p1y > p2y)
+        {
+            int x = p2x;
+            int y = p2y;
+            float z = p2z;
+            p2x = p1x;
+            p2y = p1y;
+            p2z = p1z;
+            p1x = x;
+            p1y = y;
+            p1z = z;
+        }
+
+        // inverse slopes
+        float dP1P2, dP1P3;
+
+        // http://en.wikipedia.org/wiki/Slope
+        // Computing inverse slopes
+        if (p2y - p1y > 0)
+            dP1P2 = ((float) (p2x - p1x)) / (p2y - p1y);
+        else
+            dP1P2 = 0;
+
+        if (p3y - p1y > 0)
+            dP1P3 = ((float) (p3x - p1x)) / (p3y - p1y);
+        else
+            dP1P3 = 0;
+
+        // First case where triangles are like that:
+        // P1
+        // -
+        // --
+        // - -
+        // -  -
+        // -   - P2
+        // -  -
+        // - -
+        // -
+        // P3
+        if (dP1P2 > dP1P3) {
+            for (int y = p1y; y <= p3y; y++) {
+                if (y < p2y) {
+                    processScanLine(
+                            y,
+                            p1x, p1y, p1z,
+                            p3x, p3y, p3z,
+                            p1x, p1y, p1z,
+                            p2x, p2y, p2z,
+                            color
+                    );
+                }
+                else {
+                    processScanLine(
+                            y,
+                            p1x, p1y, p1z,
+                            p3x, p3y, p3z,
+                            p2x, p2y, p2z,
+                            p3x, p3y, p3z,
+                            color
+                    );
+                }
+            }
+        }
+        // First case where triangles are like that:
+        //       P1
+        //        -
+        //       --
+        //      - -
+        //     -  -
+        // P2 -   -
+        //     -  -
+        //      - -
+        //        -
+        //       P3
+        else
+        {
+            for (int y = p1y; y <= p3y; y++) {
+                if (y < p2y) {
+                    processScanLine(
+                            y,
+                            p1x, p1y, p1z,
+                            p2x, p2y, p2z,
+                            p1x, p1y, p1z,
+                            p3x, p3y, p3z,
+                            color
+                    );
+                }
+                else {
+                    processScanLine(
+                            y,
+                            p2x, p2y, p2z,
+                            p3x, p3y, p3z,
+                            p1x, p1y, p1z,
+                            p3x, p3y, p3z,
+                            color
+                    );
+                }
+            }
         }
     }
 

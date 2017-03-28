@@ -28,13 +28,13 @@ public class Vec3 {
         return new Vec3(y * v.z - v.y * z, - (x * v.z - v.x * z),  x * v.y - v.x * y);
     }
 
-    public float norm() {
+    public float length() {
         return (float) Math.sqrt(x * x + y * y + z * z);
     }
 
     public Vec3 normalize() {
-        float norm = norm();
-        return new Vec3(x/norm, y/norm, z/norm);
+        float length = length();
+        return new Vec3(x/length, y/length, z/length);
     }
 
     @Override

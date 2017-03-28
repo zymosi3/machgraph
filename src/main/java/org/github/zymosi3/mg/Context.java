@@ -21,5 +21,5 @@ public class Context {
     public final List<Obj> objects = new ArrayList<>();
 
     // light direction in world coords
-    public final Vec3 light = new Vec3(0, 0, -1);
+    public final Vec3 light = new Vec3(0, 0, 1);
 }

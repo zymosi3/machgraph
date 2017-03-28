@@ -16,6 +16,8 @@ public class Obj {
     private List<Face> faces;
 
     public final Function<Vec3, Vec3> obj2Screen;
+    public final Function<Vec3, Vec3> screen2obj;
+    public final Function<Face, Face> faceObj2Screen;
 
     public final Function<Obj, Obj> move;
 
@@ -27,6 +29,9 @@ public class Obj {
         this.move = move;
 
         obj2Screen = v -> motion.movePosition.apply(position).obj2screen.apply(v);
+        screen2obj = v -> motion.movePosition.apply(position).screen2obj.apply(v);
+        faceObj2Screen = face ->
+                new Face(face.intensity, Stream.of(face.vertices).map(obj2Screen).toArray(Vec3[]::new));
     }
 
     public Stream<Face> stream() {

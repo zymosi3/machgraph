@@ -9,10 +9,21 @@ public class Face {
 
     public final Vec3[] vertices;
 
+    public final float intensity;
+
     public Face(Vec3... vertices) {
+        this(1.0f, vertices);
+    }
+
+    public Face(float intensity, Vec3... vertices) {
         assert vertices != null;
         assert vertices.length > 0;
+        this.intensity = intensity;
         this.vertices = vertices;
+    }
+
+    public Vec3 norm() {
+        return vertices[2].sub(vertices[0]).cross(vertices[1].sub(vertices[0])).normalize();
     }
 
     public Stream<Vec3> stream() {

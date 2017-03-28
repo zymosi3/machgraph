@@ -10,6 +10,7 @@ import java.awt.BorderLayout;
 import java.awt.Canvas;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.SystemColor;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
@@ -30,7 +31,7 @@ public class App {
 
         JFrame appWindow = new JFrame("Computer Graphics rocks");
         JPanel panel = new JPanel(new BorderLayout());
-        DrawerZBuffered drawer = new DrawerZBuffered(context.scaledWidth, context.scaledHeight);
+        DrawerAlt drawer = new DrawerAlt(context.scaledWidth, context.scaledHeight);
         AppCanvas canvas = new AppCanvas(drawer, context);
         panel.add(canvas, BorderLayout.CENTER);
 
@@ -93,13 +94,13 @@ public class App {
         Obj cube = new Obj(
                 new Position(A, A1, X0),
                 WavefrontStream.ofResource("cube-triangles").get(),
-//                new Motion(new Vec3(45.0f, 80.0f, 0.5f), new Vec3(0.0f, 0.0f, 0.0f))
+//                new Motion(new Vec3(45.0f, 120.0f, 0.5f), new Vec3(0.0f, 0.0f, 0.0f))
                 new Motion(new Vec3(0.5f, 0.5f, 0.5f), new Vec3(0.0f, 0.0f, 0.0f))
         );
         Obj cubeBack = new Obj(
                 new Position(A, A1, X0),
                 WavefrontStream.ofResource("cube-back").get(),
-//                new Motion(new Vec3(45.0f, 80.0f, 0.5f), new Vec3(0.0f, 0.0f, 0.0f))
+//                new Motion(new Vec3(45.0f, 95.0f, 10.0f), new Vec3(0.0f, 0.0f, 0.0f))
                 new Motion(new Vec3(0.3f, 0.4f, 0.6f), new Vec3(0.0f, 0.0f, 0.0f))
         );
         Obj triangle = new Obj(
@@ -107,39 +108,44 @@ public class App {
                 WavefrontStream.ofResource("triangle").get(),
                 new Motion(new Vec3(0.5f, 0.5f, 0.5f), new Vec3(0.0f, 0.0f, 0.0f))
         );
+
+        Obj debugZbuffer = new Obj(
+                new Position(A, A1, X0),
+                WavefrontStream.ofResource("debug-zbuffer").get(),
+//                new Motion(new Vec3(0.5f, 0.5f, 0.5f), new Vec3(0.0f, 0.0f, 0.0f))
+                new Motion(new Vec3(60.0f, 80.0f, 80.0f), new Vec3(-5.0f, -1.5f, 0.0f))
+        );
         context.objects.addAll(Arrays.asList(cube, cubeBack));
+//        context.objects.addAll(Arrays.asList(cubeBack));
+//        context.objects.addAll(Arrays.asList(debugZbuffer));
     }
 
-    private static void draw(DrawerZBuffered drawer, Context context) {
+    private static void draw(DrawerAlt drawer, Context context) {
         long startTime = System.currentTimeMillis();
 
 //        FileStreamer.ofResource("debug-bresenham").get().forEach(c -> c.accept(drawer));
 //        FileStreamer.ofResource("4dim-cube").get().forEach(c -> c.accept(drawer));
 
-//        int color = Drawer.color(255, 255, 255);
-//        drawer.triangleBresenham(10, 10, 15, 20, 20, 10, color);
-//        drawer.line(35, 20, 30, 10, color);
-//        drawer.line(35, 20, 40, 10, color);
-//        drawer.line(30, 10, 40, 10, color);
-//
-//        drawer.triangleBresenham(50, 20, 60, 20, 55, 10, color);
-//        drawer.line(75, 10, 70, 20, color);
-//        drawer.line(75, 10, 80, 20, color);
-//        drawer.line(70, 20, 80, 20, color);
-//
-//        drawer.triangleBresenham(10, 25, 20, 45, 25, 30, color);
-//        drawer.line(40, 25, 50, 45, color);
-//        drawer.line(50, 45, 55, 30, color);
-//        drawer.line(55, 30, 40, 25, color);
-//
-//        drawer.triangleBresenham(10, 50, 20, 70, 18, 55, color);
-//        drawer.line(40, 50, 50, 70, color);
-//        drawer.line(50, 70, 48, 55, color);
-//        drawer.line(48, 55, 40, 50, color);
-
+//        drawer.line(57, 80, 4.5968213f, 58, 81, 4.60206f, -13882324);
+//        drawer.line(74, 96, 4.685876f, 58, 81, 4.60206f, -13882324);
+//        drawer.line(57, 80, 4.5968213f, 71, 93, 4.6701603f, -5263441);
+//        drawer.line(74, 96, 4.685876f, 71, 93, 4.6701603f, -5263441);
 
         Function<Vec3, Vec3> projection = new PerspectiveProjection(0.83f);
+        Function<Face, Face> faceProjection = face ->
+                new Face(face.intensity, Stream.of(face.vertices).map(projection).toArray(Vec3[]::new));
+
         Function<Vec3, Vec3> screenScale = new ScreenScale(context.width, context.height);
+        Function<Face, Face> faceScreenScale = face ->
+                new Face(face.intensity, Stream.of(face.vertices).map(screenScale).toArray(Vec3[]::new));
+
+        Function<Face, Face> intensity = face -> {
+//            System.out.println(face.norm().toString() + " " + context.light);
+//            System.out.println(face.norm().mult(context.light));
+            float i = face.norm().mult(context.light);
+            if (i < 0) i = 0.0f;
+            return new Face(i, face.vertices);
+        };
 
         BinaryOperator<Vec3> drawLine = new DrawLine(drawer);
 
@@ -163,28 +169,36 @@ public class App {
 
          context.objects.stream().
                 map(obj -> obj.move.apply(obj)).
-                forEach(obj -> obj.stream().forEach(face -> {
-                    Vec3[] scrV = Stream.of(face.vertices).map(obj.obj2Screen).toArray(Vec3[]::new);
-                    Vec3 n = scrV[2].sub(scrV[0]).cross(scrV[1].sub(scrV[0])).normalize();
-                    float intensity = n.mult(context.light);
-                    if (intensity > 0) {
-                        Vec3[] vertices = face.stream().
-                                map(obj.obj2Screen).
-                                map(projection).
-                                map(screenScale).
-                                toArray(Vec3[]::new);
-                        drawer.triangleBresenham(
-                                Math.round(vertices[0].x), Math.round(vertices[0].y), vertices[0].z,
-                                Math.round(vertices[1].x), Math.round(vertices[1].y), vertices[1].z,
-                                Math.round(vertices[2].x), Math.round(vertices[2].y), vertices[2].z,
-                                Drawer.color((int) (255 * intensity), (int) (255 * intensity), (int) (255 * intensity))
-                        );
+                forEach(obj -> obj.stream().
+                        map(obj.faceObj2Screen).
+                        map(intensity).
+//                        filter(face -> face.intensity > 0).
+                        map(faceProjection).
+                        map(faceScreenScale).
+                        forEach(face -> {
+                            drawer.drawTriangle(
+                                    Math.round(face.vertices[0].x), Math.round(face.vertices[0].y), face.vertices[0].z,
+                                    Math.round(face.vertices[1].x), Math.round(face.vertices[1].y), face.vertices[1].z,
+                                    Math.round(face.vertices[2].x), Math.round(face.vertices[2].y), face.vertices[2].z,
+                                    Drawer.color((int) (255 * face.intensity), (int) (255 * face.intensity), (int) (255 * face.intensity))
+                            );
+//                            Vec3 n = face.norm();
+//                            float m = 100 / (float) Math.sqrt(n.x * n.x + n.y * n.y);
+//                            Vec3 o = new Vec3(
+//                                    (face.vertices[0].x + face.vertices[1].x + face.vertices[2].x) / 3,
+//                                    (face.vertices[0].y + face.vertices[1].y + face.vertices[2].y) / 3,
+//                                    (face.vertices[0].z + face.vertices[1].z + face.vertices[2].z) / 3
+//                            );
+//                            drawer.line(
+//                                    Math.round(o.x), Math.round(o.y), 0.0f,
+//                                    Math.round(o.x + n.x * m), Math.round(o.y + n.y * m), 0.0f,
+//                                    Drawer.color(255, 0, 0)
+//                            );
 //                        face.stream().
 //                                map(obj.obj2Screen).
 //                                map(projection).
 //                                map(screenScale).
-//                                reduce(drawLine)
-                    }
+//                                reduce(drawLine);
                 }));
 
 //        AtomicInteger i = new AtomicInteger();
@@ -222,10 +236,10 @@ public class App {
 
         private final BufferedImage image;
         private final int[] pixels;
-        private final DrawerZBuffered drawer;
+        private final DrawerAlt drawer;
         private final Context context;
 
-        AppCanvas(DrawerZBuffered drawer, Context context) {
+        AppCanvas(DrawerAlt drawer, Context context) {
             this.context = context;
             Dimension size = new Dimension(context.width, context.height);
             setSize(size);

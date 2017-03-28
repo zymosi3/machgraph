@@ -24,6 +24,7 @@ public class DrawerTest {
 
     private static Drawer drawer;
     private static DrawerZBuffered drawerZBuffered;
+    private static DrawerAlt drawerAlt;
     private static Random random;
 
     @Setup
@@ -31,6 +32,7 @@ public class DrawerTest {
         random = new Random();
         drawer = new Drawer(WIDTH, HEIGHT);
         drawerZBuffered = new DrawerZBuffered(WIDTH, HEIGHT);
+        drawerAlt = new DrawerAlt(WIDTH, HEIGHT);
     }
 
     @Benchmark
@@ -89,6 +91,22 @@ public class DrawerTest {
     @Benchmark
     public static void bresenhamLineZBuffered()  {
         drawerZBuffered.line(
+                random.nextInt(WIDTH),
+                random.nextInt(HEIGHT),
+                random.nextFloat(),
+                random.nextInt(WIDTH),
+                random.nextInt(HEIGHT),
+                random.nextFloat(),
+                WHITE
+        );
+    }
+
+    @Benchmark
+    public static void altTriangleZBuffered()  {
+        drawerAlt.triangleBresenham(
+                random.nextInt(WIDTH),
+                random.nextInt(HEIGHT),
+                random.nextFloat(),
                 random.nextInt(WIDTH),
                 random.nextInt(HEIGHT),
                 random.nextFloat(),
