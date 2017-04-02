@@ -31,7 +31,12 @@ public class Obj {
         obj2Screen = v -> motion.movePosition.apply(position).obj2screen.apply(v);
         screen2obj = v -> motion.movePosition.apply(position).screen2obj.apply(v);
         faceObj2Screen = face ->
-                new Face(face.intensity, Stream.of(face.vertices).map(obj2Screen).toArray(Vec3[]::new));
+                new Face(
+                        face.intensity,
+                        obj2Screen.apply(face.n),
+                        obj2Screen.apply(face.center),
+                        Stream.of(face.vertices).map(obj2Screen).toArray(Vec3[]::new)
+                );
     }
 
     public Stream<Face> stream() {

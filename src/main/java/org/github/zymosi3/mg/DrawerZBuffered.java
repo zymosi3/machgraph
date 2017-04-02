@@ -79,6 +79,169 @@ public class DrawerZBuffered {
         }
     }
 
+    private float clamp(float value) {
+        return Math.max(0.0f, Math.min(value, 1.0f));
+    }
+
+    private float interpolate1(float min, float max, float gradient) {
+        return min + (max - min) * clamp(gradient);
+    }
+
+    private void processScanLine(
+            int y,
+            int pax, int pay, float paz,
+            int pbx, int pby, float pbz,
+            int pcx, int pcy, float pcz,
+            int pdx, int pdy, float pdz,
+            int color
+    ) {
+        float gradient1 = pay != pby ? ((float) (y - pay)) / (pby - pay) : 1;
+        float gradient2 = pcy != pdy ? ((float) (y - pcy)) / (pdy - pcy) : 1;
+        int sx = (int) interpolate1(pax, pbx, gradient1);
+        int ex = (int) interpolate1(pcx, pdx, gradient2);
+        float z1 = interpolate1(paz, pbz, gradient1);
+        float z2 = interpolate1(pcz, pdz, gradient2);
+        for (int x = sx; x < ex; x++) {
+            float gradient = ((float) (x - sx)) / (ex - sx);
+            float z = interpolate1(z1, z2, gradient);
+            point(x, y, z, color);
+        }
+    }
+
+    public void drawTriangle(
+            int p1x, int p1y, float p1z,
+            int p2x, int p2y, float p2z,
+            int p3x, int p3y, float p3z,
+            int color
+    ) {
+        // Sorting the points in order to always have this order on screen p1, p2 & p3
+        // with p1 always up (thus having the Y the lowest possible to be near the top screen)
+        // then p2 between p1 & p3
+        if (p1y > p2y) {
+            int x = p2x;
+            int y = p2y;
+            float z = p2z;
+            p2x = p1x;
+            p2y = p1y;
+            p2z = p1z;
+            p1x = x;
+            p1y = y;
+            p1z = z;
+        }
+
+        if (p2y > p3y) {
+            int x = p2x;
+            int y = p2y;
+            float z = p2z;
+            p2x = p3x;
+            p2y = p3y;
+            p2z = p3z;
+            p3x = x;
+            p3y = y;
+            p3z = z;
+        }
+
+        if (p1y > p2y)
+        {
+            int x = p2x;
+            int y = p2y;
+            float z = p2z;
+            p2x = p1x;
+            p2y = p1y;
+            p2z = p1z;
+            p1x = x;
+            p1y = y;
+            p1z = z;
+        }
+
+        // inverse slopes
+        float dP1P2, dP1P3;
+
+        // http://en.wikipedia.org/wiki/Slope
+        // Computing inverse slopes
+        if (p2y - p1y > 0)
+            dP1P2 = ((float) (p2x - p1x)) / (p2y - p1y);
+        else
+            dP1P2 = 0;
+
+        if (p3y - p1y > 0)
+            dP1P3 = ((float) (p3x - p1x)) / (p3y - p1y);
+        else
+            dP1P3 = 0;
+
+        // First case where triangles are like that:
+        // P1
+        // -
+        // --
+        // - -
+        // -  -
+        // -   - P2
+        // -  -
+        // - -
+        // -
+        // P3
+        if (dP1P2 > dP1P3) {
+            for (int y = p1y; y <= p3y; y++) {
+                if (y < p2y) {
+                    processScanLine(
+                            y,
+                            p1x, p1y, p1z,
+                            p3x, p3y, p3z,
+                            p1x, p1y, p1z,
+                            p2x, p2y, p2z,
+                            color
+                    );
+                }
+                else {
+                    processScanLine(
+                            y,
+                            p1x, p1y, p1z,
+                            p3x, p3y, p3z,
+                            p2x, p2y, p2z,
+                            p3x, p3y, p3z,
+                            color
+                    );
+                }
+            }
+        }
+        // First case where triangles are like that:
+        //       P1
+        //        -
+        //       --
+        //      - -
+        //     -  -
+        // P2 -   -
+        //     -  -
+        //      - -
+        //        -
+        //       P3
+        else
+        {
+            for (int y = p1y; y <= p3y; y++) {
+                if (y < p2y) {
+                    processScanLine(
+                            y,
+                            p1x, p1y, p1z,
+                            p2x, p2y, p2z,
+                            p1x, p1y, p1z,
+                            p3x, p3y, p3z,
+                            color
+                    );
+                }
+                else {
+                    processScanLine(
+                            y,
+                            p2x, p2y, p2z,
+                            p3x, p3y, p3z,
+                            p1x, p1y, p1z,
+                            p3x, p3y, p3z,
+                            color
+                    );
+                }
+            }
+        }
+    }
+
     public void triangleBresenham(
             int x0, int y0, float z0,
             int x1, int y1, float z1,
@@ -156,20 +319,17 @@ public class DrawerZBuffered {
             z_2 = z0;
         }
 
-        triangleBresenhamSorted(x_0, y_0, z_0, x_1, y_1, z_1, x_2, y_2, z_2, color);
+        altTriangleSorted(x_0, y_0, z_0, x_1, y_1, z_1, x_2, y_2, z_2, color);
     }
 
-    private void triangleBresenhamSorted(
+    private void altTriangleSorted(
             int x0, int y0, float z0,
             int x1, int y1, float z1,
             int x2, int y2, float z2,
             int color
     ) {
-        // here we know that y0 <= y2 <= y3
-        if (y1 == y2) { // check for trivial case of bottom-flat triangle
-            fillOneSideFlatTriangle(x1, y1, z1, x2, y2, z2, x0, y0, z0, color);
-        } else if (y0 == y1) { // check for trivial case of top-flat triangle
-            fillOneSideFlatTriangle(x0, y0, z0, x1, y1, z1, x2, y2, z2, color);
+        if (y1 == y2 && y0 == y1) {
+            altTriangle(x0, y0, z0, x1, y1, z1, x2, y2, z2, color);
         } else {
             // general case - split the triangle in a topflat and bottom-flat one
             int x3 = Math.round(x0 + ((float)(y1 - y0) / (float)(y2 - y0)) * (x2 - x0));
@@ -181,118 +341,51 @@ public class DrawerZBuffered {
             } else {
                 z3 = z0 + (x3 - x0) * (z2 - z0) / (x2 - x0);
             }
-            fillOneSideFlatTriangle(x1, y1, z1, x3, y1, z3, x0, y0, z0, color);
-            fillOneSideFlatTriangle(x1, y1, z1, x3, y1, z3, x2, y2, z2, color);
+            altTriangle(x0, y0, z0, x1, y1, z1, x3, y1, z3, color);
+            altTriangle(x1, y1, z1, x3, y1, z3, x2, y2, z2, color);
         }
     }
 
-    @SuppressWarnings("ConstantConditions")
-    private void fillOneSideFlatTriangle(
+    private float interpolate(float start, float end, float gradient) {
+        return start + Math.abs(end - start) * gradient;
+    }
+
+    private void altTriangle(
             int x0, int y0, float z0,
             int x1, int y1, float z1,
             int x2, int y2, float z2,
             int color
     ) {
-        if (Global.DEBUG) {
-            System.out.println("triangle flat side " +
-                    x0 + " " + y0 + " " + z0 + " " +
-                    x1 + " " + y1 + " " + z1 + " " +
-                    x2 + " " + y2 + " " + z2 + " " +
-                    color);
-        }
-        int x_0 = x2; // x for the one side line
-        int x_1 = x2; // x for the other side line
-        int y_0 = y2;
-        int y_1 = y2;
-        float z_0 = z2;
-        float z_1 = z2;
-        int dx_0 = Math.abs(x0 - x2);
-        int dx_1 = Math.abs(x1 - x2);
-        int dy_0 = Math.abs(y0 - y2);
-        int dy_1 = Math.abs(y1 - y2);
-        float dz_0 = z0 - z2;
-        float dz_1 = z1 - z2;
-        int sx_0 = Integer.signum(x0 - x2);
-        int sx_1 = Integer.signum(x1 - x2);
-        int sy_0 = Integer.signum(y0 - y2);
-        int sy_1 = Integer.signum(y1 - y2);
-
-        boolean swap_0 = false;
-        if (dy_0 > dx_0) {
-            int v = dx_0;
-            dx_0 = dy_0;
-            dy_0 = v;
-            swap_0 = true;
-        }
-
-        boolean swap_1 = false;
-
-        if (dy_1 > dx_1) {
-            int v = dx_1;
-            dx_1 = dy_1;
-            dy_1 = v;
-            swap_1 = true;
-        }
-
-        int error_0 = 2 * dy_0 - dx_0;
-        int error_1 = 2 * dy_1 - dx_1;
-
-        boolean stop_0 = false;
-        boolean stop_1 = false;
-        for (int i_0 = 0, i_1 = 0; i_0 <= dx_0 || i_1 <= dx_1; ) {
-            if (stop_0 && stop_1) {
-                int s = Integer.signum(x_1 - x_0);
-                int dx = Math.abs(x_0 - x_1);
-                float dz = z_1 - z_0;
-                for (int i = 0; i <= dx; i++){
-                    int x = x_0 + (i * s);
-                    float z = z_0 + Math.abs(x - x_0) * dz / dx;
-                    point(x, y_0, z, color);
-                }
-                stop_0 = false;
-                stop_1 = false;
+        for (int y = y0; y <= y2; y++) {
+            float gradient = y2 != y0 ? ((float) (y - y0)) / (y2 - y0) : 1.0f;
+            int x_0, x_1;
+            float x_0f, x_1f;
+            float z_0, z_1;
+            if (y0 == y1) {
+                x_0f = interpolate(x0, x2, gradient * Math.signum(x2 - x0));
+                x_1f = interpolate(x1, x2, gradient * Math.signum(x2 - x1));
+                z_0 = interpolate(z0, z2, gradient * Math.signum(z2 - z0));
+                z_1 = interpolate(z1, z2, gradient * Math.signum(z2 - z1));
+            } else {
+                x_0f = interpolate(x0, x1, gradient * Math.signum(x1 - x0));
+                x_1f = interpolate(x0, x2, gradient * Math.signum(x2 - x0));
+                z_0 = interpolate(z0, z1, gradient * Math.signum(z1 - z0));
+                z_1 = interpolate(z0, z2, gradient * Math.signum(z2 - z0));
             }
-            if (i_0 <= dx_0 && !stop_0) {
-                point(x_0, y_0, z_0, color);
-                while ((sy_0 > 0 && error_0 >= 0) || (sy_0 <= 0 && error_0 > 0)) {
-                    if (swap_0)
-                        x_0 += sx_0;
-                    else {
-                        y_0 += sy_0;
-                        stop_0 = true;
-                    }
-                    error_0 -= 2 * dx_0;
-                }
-
-                if (swap_0) {
-                    y_0 += sy_0;
-                    stop_0 = true;
-                } else
-                    x_0 += sx_0;
-                error_0 += 2 * dy_0;
-                z_0 = z2 + Math.abs(swap_0 ? (y2 - y_0) : (x2 - x_0)) * dz_0 / dx_0;
-                i_0++;
+            if (x_0f > x_1f) {
+                float x = x_0f;
+                x_0f = x_1f;
+                x_1f = x;
+                float z = z_0;
+                z_0 = z_1;
+                z_1 = z;
             }
-
-            if (i_1 <= dx_1 && !stop_1) {
-                point(x_1, y_1, z_1, color);
-                while ((sy_1 > 0 && error_1 >= 0) || (sy_1 <= 0 && error_1 > 0)) {
-                    if (swap_1)
-                        x_1 += sx_1;
-                    else {
-                        y_1 += sy_1;
-                        stop_1 = true;
-                    }
-                    error_1 -= 2 * dx_1;
-                }
-                if (swap_1) {
-                    y_1 += sy_1;
-                    stop_1 = true;
-                } else
-                    x_1 += sx_1;
-                error_1 += 2 * dy_1;
-                z_1 = z2 + Math.abs(swap_1 ? (y2 - y_1) : (x2 - x_1)) * dz_1 / dx_1;
-                i_1++;
+            x_0 = (int) x_0f;
+            x_1 = (int) x_1f;
+            for (int x = x_0; x <= x_1; x++) {
+                float gradientZ = x_1f != x_0f ? (x - x_0f) / (x_1f - x_0f) : 1.0f;
+                float z = interpolate(z_0, z_1, gradientZ * Math.signum(z_1- z_0));
+                point(x, y, z, color);
             }
         }
     }
