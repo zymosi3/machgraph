@@ -21,8 +21,11 @@ public class Obj {
 
     public final Function<Obj, Obj> move;
 
-    public Obj(Position position, Stream<Face> faceStream, Motion move) {
+    public final Texture texture;
+
+    public Obj(Position position, Stream<Face> faceStream, Motion move, Texture texture) {
         this.position = position;
+        this.texture = texture;
         this.motion = new Motion(new Vec3(0.0f, 0.0f, 0.0f), new Vec3(0.0f, 0.0f, 0.0f));
         this.faces = faceStream.collect(Collectors.toList());
 
@@ -35,7 +38,8 @@ public class Obj {
                         face.intensity,
                         obj2Screen.apply(face.n),
                         obj2Screen.apply(face.center),
-                        Stream.of(face.vertices).map(obj2Screen).toArray(Vec3[]::new)
+                        Stream.of(face.v).map(obj2Screen).toArray(Vec3[]::new),
+                        face.vt
                 );
     }
 

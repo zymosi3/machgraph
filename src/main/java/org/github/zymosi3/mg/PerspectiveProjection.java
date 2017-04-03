@@ -23,4 +23,9 @@ public class PerspectiveProjection implements Function<Vec3, Vec3> {
 
         return res;
     }
+
+    public Vec3 inverse(Vec3 v) {
+        float zeta = 1.0f + v.z / focus;
+        return new Vec3(v.x * zeta, v.y * zeta, v.z);
+    }
 }

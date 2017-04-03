@@ -20,7 +20,8 @@ public class DrawerTest {
 
     private static int WIDTH = 1024;
     private static int HEIGHT = 768;
-    private static int WHITE = Drawer.color(255, 255, 255);
+    private static int WHITE = App.color(255, 255, 255);
+    private static ColorFunction COLOR = (x, y, z) -> WHITE;
 
     private static Drawer drawer;
     private static DrawerZBuffered drawerZBuffered;
@@ -82,7 +83,7 @@ public class DrawerTest {
                 random.nextInt(WIDTH),
                 random.nextInt(HEIGHT),
                 random.nextFloat(),
-                WHITE
+                COLOR
         );
     }
 
@@ -95,7 +96,7 @@ public class DrawerTest {
                 random.nextInt(WIDTH),
                 random.nextInt(HEIGHT),
                 random.nextFloat(),
-                WHITE
+                COLOR
         );
     }
 
@@ -111,7 +112,7 @@ public class DrawerTest {
                 random.nextInt(WIDTH),
                 random.nextInt(HEIGHT),
                 random.nextFloat(),
-                WHITE
+                COLOR
         );
     }
 }

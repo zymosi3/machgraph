@@ -6,7 +6,9 @@ import java.util.Arrays;
 
 public class Face {
 
-    public final Vec3[] vertices;
+    public final Vec3[] v;
+
+    public final Vec3[] vt;
 
     public final float intensity;
 
@@ -14,26 +16,86 @@ public class Face {
 
     public final Vec3 center;
 
-    public Face(Vec3... vertices) {
+    public Face(Vec3[] v, Vec3[] vt) {
         this(
                 1.0f,
-                norm(vertices[0], vertices[1], vertices[2]),
-                center(vertices[0], vertices[1], vertices[2]),
-                vertices
+                norm(v[0], v[1], v[2]),
+                center(v[0], v[1], v[2]),
+                v,
+                vt
         );
     }
 
-    public Face(float intensity, Vec3 n, Vec3 center, Vec3... vertices) {
-        assert vertices != null;
-        assert vertices.length > 0;
+    public Face(float intensity, Vec3 n, Vec3 center, Vec3[] v, Vec3[] vt) {
+        assert v != null;
+        assert v.length > 0;
         this.intensity = intensity;
-        this.vertices = vertices;
+        this.v = v;
         this.n = n;
         this.center = center;
+        this.vt = vt;
     }
 
     public Vec3 norm() {
-        return vertices[2].sub(vertices[0]).cross(vertices[1].sub(vertices[0])).normalize();
+        return v[2].sub(v[0]).cross(v[1].sub(v[0])).normalize();
+    }
+
+    public Vec3 toTexture(Vec3 v) {
+        if (vt[0] == null)
+            return null;
+
+        float x1 = this.v[0].x;
+        float x2 = this.v[2].x;
+        float tx1 = this.vt[0].x;
+        float tx2 = this.vt[2].x;
+        float y1 = this.v[0].y;
+        float y2 = this.v[2].y;
+        float ty1 = this.vt[0].y;
+        float ty2 = this.vt[0].y;
+
+        if (this.v[1].x < x1) {
+            x1 = this.v[1].x;
+            tx1 = this.vt[1].x;
+        }
+
+        if (this.v[2].x < x1) {
+            x1 = this.v[2].x;
+            tx1 = this.vt[2].x;
+        }
+
+        if (this.v[0].x > x2) {
+            x2 = this.v[0].x;
+            tx2 = this.vt[0].x;
+        }
+
+        if (this.v[1].x > x2) {
+            x2 = this.v[1].x;
+            tx2 = this.vt[1].x;
+        }
+
+        if (this.v[1].y < y1) {
+            y1 = this.v[1].y;
+            ty1 = this.vt[1].y;
+        }
+
+        if (this.v[2].y < y1) {
+            y1 = this.v[2].y;
+            ty1 = this.vt[2].y;
+        }
+
+        if (this.v[0].y > y2) {
+            y2 = this.v[0].y;
+            ty2 = this.vt[0].y;
+        }
+
+        if (this.v[1].y > y2) {
+            y2 = this.v[1].y;
+            ty2 = this.vt[1].y;
+        }
+
+        float xTx = tx2 - (tx2 - tx1) * (x2 - v.x) / (x2 - x1);
+        float xTy = ty2 - (ty2 - ty1) * (y2 - v.y) / (y2 - y1);
+        return new Vec3(xTx, xTy, v.z);
     }
 
     @Override
@@ -44,18 +106,18 @@ public class Face {
         Face face = (Face) o;
 
         // Probably incorrect - comparing Object[] arrays with Arrays.equals
-        return Arrays.equals(vertices, face.vertices);
+        return Arrays.equals(v, face.v);
     }
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(vertices);
+        return Arrays.hashCode(v);
     }
 
     @Override
     public String toString() {
         return "Face{" +
-                "vertices=" + Arrays.toString(vertices) +
+                "v=" + Arrays.toString(v) +
                 ", intensity=" + intensity +
                 ", n=" + n +
                 ", center=" + center +

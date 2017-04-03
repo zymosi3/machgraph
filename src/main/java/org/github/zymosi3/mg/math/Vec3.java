@@ -37,6 +37,24 @@ public class Vec3 {
         return new Vec3(x/length, y/length, z/length);
     }
 
+    public Vec3 rotateAboutAxis(float a, Vec3 u) {
+        if (Float.isNaN(u.x) || Float.isNaN(u.y) || Float.isNaN(u.z)) {
+            return this;
+        }
+        float cos = (float) Math.cos(a);
+        float sin = (float) Math.sin(a);
+        Mat3 m = new Mat3(
+                cos + u.x * u.x * (1 - cos), u.x * u.y * (1 - cos) - u.z * sin, u.x * u.z * (1 - cos) + u.y * sin,
+                u.x * u.y * (1 - cos) + u.z * sin, cos + u.y * u.y * (1 - cos), u.y * u.z * (1 - cos) - u.x * sin,
+                u.x * u.z * (1 - cos) - u.y * sin, u.y * u.z * (1 - cos) + u.x * sin, cos + u.z * u.z * (1 - cos)
+        );
+        return m.multiply(this);
+    }
+
+    public float angle(Vec3 v) {
+        return (float) Math.acos(this.mult(v)/(this.length() * v.length()));
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

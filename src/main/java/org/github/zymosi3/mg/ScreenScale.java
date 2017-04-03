@@ -25,4 +25,8 @@ public class ScreenScale implements Function<Vec3, Vec3> {
 
         return res;
     }
+
+    public Vec3 inverse(Vec3 v) {
+        return new Vec3 ((v.x - width * 0.5f) / scaleTo, (v.y - height * 0.5f) / scaleTo, v.z);
+    }
 }

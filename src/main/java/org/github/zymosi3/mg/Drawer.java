@@ -299,15 +299,4 @@ public class Drawer {
     public void clear() {
         Arrays.setAll(pixels, i -> 0);
     }
-
-    @SuppressWarnings("NumericOverflow")
-    public static int color(int r, int g, int b) {
-        assert r >= 0 && r <= 255;
-        assert g >= 0 && g <= 255;
-        assert b >= 0 && b <= 255;
-        return ((0xFF) << 24) |
-                ((r & 0xFF) << 16) |
-                ((g & 0xFF) << 8)  |
-                ((b & 0xFF));
-    }
 }

@@ -19,10 +19,10 @@ public class DrawerZBuffered {
         zbuf = new Zbuf(width, height);
     }
 
-    public void point(int x, int y, float z, int color) {
+    public void point(int x, int y, float z, ColorFunction color) {
         if (x < 0 || x >= width || y < 0 || y >= height || z < 0) return;
         if (z < zbuf.get(x, y)) {
-            pixels[width * (height - 1 - y) + x] = color;
+            pixels[width * (height - 1 - y) + x] = color.apply(x, y, z);
             zbuf.set(x, y, z);
         }
     }
@@ -31,7 +31,7 @@ public class DrawerZBuffered {
      * Integer Bresenham’s algorithm
      * According to David F. Rodgers "Procedural Elements for Computer Graphics"
      */
-    public void line(int x0, int y0, float z0, int x1, int y1, float z1, int color) {
+    public void line(int x0, int y0, float z0, int x1, int y1, float z1, ColorFunction color) {
         if (Global.DEBUG)
             System.out.println("Drawer.line(" + x0 + ", " + y0 + ", " + x1 + ", " + y1 + ", " + color + ")");
 
@@ -93,7 +93,7 @@ public class DrawerZBuffered {
             int pbx, int pby, float pbz,
             int pcx, int pcy, float pcz,
             int pdx, int pdy, float pdz,
-            int color
+            ColorFunction color
     ) {
         float gradient1 = pay != pby ? ((float) (y - pay)) / (pby - pay) : 1;
         float gradient2 = pcy != pdy ? ((float) (y - pcy)) / (pdy - pcy) : 1;
@@ -112,7 +112,7 @@ public class DrawerZBuffered {
             int p1x, int p1y, float p1z,
             int p2x, int p2y, float p2z,
             int p3x, int p3y, float p3z,
-            int color
+            ColorFunction color
     ) {
         // Sorting the points in order to always have this order on screen p1, p2 & p3
         // with p1 always up (thus having the Y the lowest possible to be near the top screen)
@@ -246,7 +246,7 @@ public class DrawerZBuffered {
             int x0, int y0, float z0,
             int x1, int y1, float z1,
             int x2, int y2, float z2,
-            int color
+            ColorFunction color
     ) {
         if (Global.DEBUG) {
             System.out.println("triangle " +
@@ -326,7 +326,7 @@ public class DrawerZBuffered {
             int x0, int y0, float z0,
             int x1, int y1, float z1,
             int x2, int y2, float z2,
-            int color
+            ColorFunction color
     ) {
         if (y1 == y2 && y0 == y1) {
             altTriangle(x0, y0, z0, x1, y1, z1, x2, y2, z2, color);
@@ -354,7 +354,7 @@ public class DrawerZBuffered {
             int x0, int y0, float z0,
             int x1, int y1, float z1,
             int x2, int y2, float z2,
-            int color
+            ColorFunction color
     ) {
         for (int y = y0; y <= y2; y++) {
             float gradient = y2 != y0 ? ((float) (y - y0)) / (y2 - y0) : 1.0f;
@@ -390,68 +390,6 @@ public class DrawerZBuffered {
         }
     }
 
-//    public void triangle(int x0, int y0, int x1, int y1, int x2, int y2, int color) {
-//        int xMin = Math.min(x0, Math.min(x1, x2));
-//        int yMin = Math.min(y0, Math.min(y1, y2));
-//        int xMax = Math.max(x0, Math.max(x1, x2));
-//        int yMax = Math.max(y0, Math.max(y1, y2));
-//
-//        for (int y = yMin; y <= yMax; y++) {
-//            float xCross0 = xMax;
-//            float xCross1 = xMin;
-//            float xCross = xCross(xMin, y, xMax, y, x0, y0, x1, y1);
-//            if (!Float.isNaN(xCross)) {
-//                if (xCross < xCross0) xCross0 = xCross;
-//                if (xCross > xCross1) xCross1 = xCross;
-//            }
-//            xCross = xCross(xMin, y, xMax, y, x1, y1, x2, y2);
-//            if (!Float.isNaN(xCross)) {
-//                if (xCross < xCross0) xCross0 = xCross;
-//                if (xCross > xCross1) xCross1 = xCross;
-//            }
-//            xCross = xCross(xMin, y, xMax, y, x2, y2, x0, y0);
-//            if (!Float.isNaN(xCross)) {
-//                if (xCross < xCross0) xCross0 = xCross;
-//                if (xCross > xCross1) xCross1 = xCross;
-//            }
-//            int xCross0int = Math.round(xCross0);
-//            int xCross1int = -Math.round(-xCross1);
-//            for (int x = xCross0int; x <= xCross1int; x++) {
-//                point(x, y, color);
-//            }
-//        }
-//    }
-
-//    private float xCross(float x00, float y00, float x01, float y01,
-//                         float x10, float y10, float x11, float y11
-//    ) {
-//        float xMin = Math.min(x10, x11);
-//        float yMin = Math.min(y10, y11);
-//        float xMax = Math.max(x10, x11);
-//        float yMax = Math.max(y10, y11);
-//        float a0 = y01 - y00;
-//        float b0 = x00 - x01;
-//        float c0 = x00 * (y00 - y01) + y00 * (x01 - x00);
-//        float a1 = y11 - y10;
-//        float b1 = x10 - x11;
-//        float c1 = x10 * (y10 - y11) + y10 * (x11 - x10);
-//
-//        float D = a0 * b1 - a1 * b0;
-//        float Dx = -c0 * b1 + c1 * b0;
-//        float Dy = -a0 * c1 + a1 * c0;
-//
-//        if (D != 0) {
-//            float x = Dx / D;
-//            float y = Dy / D;
-//            float e = -0.001f;
-//            if (x - xMin > e && xMax - x > e && y - yMin > e && yMax - y > e) {
-//                return x;
-//            }
-//        }
-//
-//        return Float.NaN;
-//    }
-
     public void flush(int[] to) {
         assert to.length == pixels.length;
         System.arraycopy(pixels, 0, to, 0, pixels.length);
@@ -460,16 +398,5 @@ public class DrawerZBuffered {
     public void clear() {
         Arrays.setAll(pixels, i -> 0);
         zbuf.clear();
-    }
-
-    @SuppressWarnings("NumericOverflow")
-    public static int color(int r, int g, int b) {
-        assert r >= 0 && r <= 255;
-        assert g >= 0 && g <= 255;
-        assert b >= 0 && b <= 255;
-        return ((0xFF) << 24) |
-                ((r & 0xFF) << 16) |
-                ((g & 0xFF) << 8)  |
-                ((b & 0xFF));
     }
 }

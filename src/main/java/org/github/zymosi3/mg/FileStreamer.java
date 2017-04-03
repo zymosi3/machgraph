@@ -53,7 +53,7 @@ public class FileStreamer implements Supplier<Stream<Consumer<DrawerZBuffered>>>
                         intParams[2],
                         intParams[3],
                         0.0f,
-                        Drawer.color(intParams[4], intParams[5], intParams[6])
+                        (x, y, z) -> App.color(intParams[4], intParams[5], intParams[6])
                 );
             default:
                 throw new IllegalArgumentException("Unknown type: " + type);

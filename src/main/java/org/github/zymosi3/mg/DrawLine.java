@@ -22,7 +22,7 @@ public class DrawLine implements BinaryOperator<Vec3> {
                 Math.round(v2.x),
                 Math.round(v2.y),
                 v2.z,
-                Drawer.color(255, 255, 255)
+                (x, y, z) -> App.color(255, 255, 255)
         );
         return v2;
     }

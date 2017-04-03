@@ -1,4 +1,4 @@
-# vertices
+# v
 # foreground cube
 v -1.0 -1.0 -1.0
 v -1.0 1.0 -1.0
@@ -15,7 +15,7 @@ v 1.0 -1.0 1.0
 
 # faces
 # foreground cube
-f 1 2 4
+f 2 1 4
 f 3 2 4
 f 3 4 8
 f 7 3 8
